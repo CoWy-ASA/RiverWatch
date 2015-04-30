@@ -44,6 +44,8 @@ nuts_tall$sample_fraction <- NA
 nuts_tall$sample_fraction <- as.character(nuts_tall$sample_fraction)
 
 nuts_tall$analyte <- as.character(nuts_tall$analyte)
+nuts_tall$category <- "Nutrients"
+
 
 ##  fix field data
 
@@ -53,6 +55,9 @@ fields$date <- paste(substr(fields$Date, start = 1, stop = 10), substr(x = field
 
 # fields$date <- strptime(fields$date, format = "%Y-%m-%d %H:%M:%S")
 fields_tall <- melt(fields, id.vars = c("date", "Event.", "Org.Name", "Stn."), measure.vars = c("PH", "X.deg.C",  "Phen.Alk", "Tot.Alk",  "Tot.Hard", "DO" ),  variable.name = "analyte", value.name = "result", na.rm = TRUE)
+fields_tall$category <- "Field"
+
+
 
 ## fix metal data
 
@@ -70,6 +75,7 @@ metals_tall <- melt(metals, id.vars = c("date", "Event.", "Stn."),  variable.nam
 metals_tall$analyte <- as.character(metals_tall$analyte)
 metals_tall$sample_fraction <- substr(metals_tall$analyte, start = 4, stop = 6)
 metals_tall$analyte <- substr(metals_tall$analyte, start = 1, stop = 2)
+metals_tall$category <- "Metals"
 
 ####
 

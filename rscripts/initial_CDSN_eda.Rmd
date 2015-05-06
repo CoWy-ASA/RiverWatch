@@ -1,0 +1,147 @@
+---
+title: "Initial_Data_Exploration"
+author: "Matt Pocernich"
+date: "Monday, May 04, 2015"
+output: html_document
+---
+
+This is a summary of a quick comparison of data available from the Excel documents and processed by the readExcelFiles.R  and data available from the Colorado Data Sharing Network (CDSN).  I queried data supplied by River Watch for sites in the Roaring Fork Valley. 
+
+I did most of the comparisons interactively and found that while not identical, the dataset were equivalent.  There were slight discrepancies of the number of sites ( 73 for CDSN vs 75 Excel), and slight discrepancies in the number of analytes and date range.  The CDSN data has ~95,000 records vs ~75,000 records from the Excel workbooks.  I found all the Excel data included in the CDNS data.  I don't know if it worthwhile searching for discrepancies.  
+
+My advice is to use either dataset.  An advantage of using the CDSN data is that the variable names would be consistent for data queried in other basins.
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(leaflet)
+
+## for data tables
+if (!requireNamespace('htmlwidgets') || packageVersion('htmlwidgets') <= '0.3.2')
+  devtools::install_github('ramnathv/htmlwidgets')
+# install DT
+if (!require("DT")) devtools::install_github("rstudio/DT")
+library(DT)
+
+
+
+dat   <- read.csv("../data/dsn_pull/rf-1990-2015.csv", header = TRUE, as.is = TRUE)
+sites <- read.csv("../data/dsn_pull/rf_sites.csv", header = TRUE, as.is = TRUE )
+
+dat$date <- as.Date(dat$Activity.Start.Date, format = "%m/%d/%Y")
+dat$Result.Value <- as.numeric(dat$Result.Value)
+dat_dt <- as.tbl(dat)
+
+events <- unique( dat[ , names(dat) %in% c("Activity.ID", "date", "Monitoring.Location.ID", "Monitoring.Location.Name" ) ] )       
+events <- as.tbl(events)
+
+events_by_sites2 <- group_by( events, Monitoring.Location.ID, Monitoring.Location.Name )%>% 
+           summarize( n_events = n_distinct(date),
+                      earliest = min(date), 
+                      latest = max(date)) %>% 
+           arrange( desc(n_events))
+
+datatable(events_by_sites2,rownames = FALSE )
+
+```
+
+
+The following figure shows the frequency of sampling for `r nrow(events_by_sites2)` of `r sum(events_by_sites2$n_events > 25) ` sites with more than 25 events.  
+
+```{r, fig.width=11}
+
+events_by_sites2 <- filter(events,date >= as.Date("1/1/1900", format = "%m/%d/%Y") )  %>% group_by(Monitoring.Location.ID )%>% 
+    summarize( n_events = n_distinct(date),
+               earliest = min(date), 
+               latest = max(date)) %>% 
+    arrange( desc(n_events))
+
+
+main_sites <- filter(events_by_sites2, n_events > 25 ) %>% select(Monitoring.Location.ID)
+
+
+### examine date range with plot
+
+filter(events, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID) %>% ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
+```
+
+
+After viewing the previous figure, I decided to focus on date collected after 2000 more than 25 events.  In many cases, the sites sampled before 2000 appear to be unique when compared with the sites sampled more recently.  Sampling frequency also seemed to change after 2005.
+
+
+```{r, fig.width=11}
+
+
+events_by_sites2 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y") )  %>% group_by(Monitoring.Location.ID )%>% 
+    summarize( n_events = n_distinct(date),
+               earliest = min(date), 
+               latest = max(date)) %>% 
+    arrange( desc(n_events))
+
+
+main_sites <- filter(events_by_sites2, n_events > 25 ) %>% select(Monitoring.Location.ID)
+
+
+filter(events, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & date >= as.Date("1/1/2000", format = "%m/%d/%Y") ) %>% 
+    ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
+
+```
+
+
+The next question deals with the analytes measured -  in the CDSN data aka "Characteristic.Name".  Note I didn't partition the metals into total and dissolved - so in many cases the events where metals where sampled are double counted.
+
+In the CDSN values less than detection are reported as zero and there is no field explicitly coding this as an ND.  Therefore I counted the values reported at 0 as a non-detect. 
+
+```{r analyteSummary}
+analytes <- filter(dat_dt, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & date >= as.Date("1/1/2000", 
+                                                                                                           format = "%m/%d/%Y") ) %>% 
+    group_by(Characteristic.Name) %>% 
+    summarise(n = n(), min = min(Result.Value), max = max(Result.Value), n_zero = sum(Result.Value == 0 ), n_detects =  sum(Result.Value > 0 ) ) %>% 
+    arrange(desc(n))
+
+datatable(analytes,rownames = FALSE)
+
+```
+
+A cursory look at this list suggests that metals along with field parameters such as pH, DO and temperature) are most often monitored.  There is also a break in frequency after ammonia, with the less frequently monitored variables dealing mostly with habitat.  Therefore, I might arbitrarily focus on values with more than 400 events.
+
+
+```{r analyte_summary}
+
+short_list <- filter(analytes, n > 400)
+short_dat <- filter(dat_dt, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & 
+           date >= as.Date("1/1/2000", format = "%m/%d/%Y")  &  Characteristic.Name %in% short_list$Characteristic.Name) 
+
+
+```
+
+
+
+Finally, a map of the sites with  a reasonable amount of data collected after 2000.
+
+```{r}
+# devtools::install_github("rstudio/leaflet")
+
+library(leaflet)
+
+
+events <- unique( dat[ , names(dat) %in% c("Activity.ID", "date", "Monitoring.Location.ID", "Monitoring.Location.Name", "Monitoring.Location.Latitude", "Monitoring.Location.Longitude"   ) ] )       
+events <- as.tbl(events)
+events_by_sites2 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y") )  %>% group_by(Monitoring.Location.ID,Monitoring.Location.Name, Monitoring.Location.Latitude, Monitoring.Location.Longitude  )%>% 
+    summarize( n_events = n_distinct(date),
+               earliest = min(date), 
+               latest = max(date)) %>% 
+    arrange( desc(n_events))
+
+
+main_sites <- filter(events_by_sites2, n_events > 25 )
+
+names(main_sites)[3:4] <- c("latitude", "longitude")
+
+m = leaflet() %>% addTiles()
+m %>% addCircles(data=main_sites) %>% addMarkers(data=main_sites, popup=main_sites$Monitoring.Location.Name )
+
+```
+
+

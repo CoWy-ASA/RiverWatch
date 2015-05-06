@@ -37,7 +37,7 @@ events_by_sites2 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y
 main_sites <- filter(events_by_sites2, n_events > 25 ) %>% select(Monitoring.Location.ID)
 
 
-### examine date range
+### examine date range with plot
 
 filter(events, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID) %>% ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
 
@@ -56,8 +56,8 @@ analytes <- filter(dat_dt, Monitoring.Location.ID %in% main_sites$Monitoring.Loc
     arrange(desc(n))
 
 
-filter(dat_dt, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & date >= as.Date("1/1/2000", format = "%m/%d/%Y") & Characteristic.Name == "Alkalinity, total" ) %>%
-    ggplot( aes(x = date, y = Result.Value)) + facet_wrap( ~ Monitoring.Location.Name, scales = "free_y") + geom_point()
+filter(dat_dt, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & date >= as.Date("1/1/2000", format = "%m/%d/%Y") & Characteristic.Name == "Iron" ) %>%
+    ggplot( aes(x = date, y = log(Result.Value)) ) + facet_wrap( ~ Monitoring.Location.Name, scales = "free_y") + geom_point()
     
 
 

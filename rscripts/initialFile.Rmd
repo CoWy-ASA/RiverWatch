@@ -10,7 +10,7 @@ Also note - this is an Rpub document, not a github.
 
 ```{r, fig.width=8, fig.height=8}
 
-location <- read.csv("data/dsn_pull/MonitoringLocationsExport (1).csv")
+location <- read.csv("../data/dsn_pull/MonitoringLocationsExport (1).csv")
 #devtools::install_github("rstudio/leaflet")
 
 library(leaflet)

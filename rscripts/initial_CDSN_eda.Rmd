@@ -144,4 +144,30 @@ m %>% addCircles(data=main_sites) %>% addMarkers(data=main_sites, popup=main_sit
 
 ```
 
+Let's look at the relation to flow and hardness
+
+```{r}
+
+filter( dat_dt, Characteristic.Name %in% c("Flow",  "Hardness, Ca, Mg"   )) %>% select(Monitoring.Location.ID, Monitoring.Location.Name, Characteristic.Name, Activity.Start.Date, Activity.Start.Time, Result.Value, Result.Unit) -> xx
+
+yy <- dcast(xx, formula = Monitoring.Location.ID + Monitoring.Location.Name + Activity.Start.Date + Activity.Start.Time ~  Characteristic.Name, value.var = "Result.Value", fun.aggregate = mean )
+
+
+plot(yy$Flow, yy$"Hardness, Ca, Mg", log = "x")
+
+####
+
+filter( dat_dt, Characteristic.Name %in% c("Flow",  "Calcium"   )) %>% select(Monitoring.Location.ID, Monitoring.Location.Name, Characteristic.Name, Activity.Start.Date, Activity.Start.Time, Result.Value, Result.Unit) -> xx
+
+yy <- dcast(xx, formula = Monitoring.Location.ID + Monitoring.Location.Name + Activity.Start.Date + Activity.Start.Time ~  Characteristic.Name, value.var = "Result.Value", fun.aggregate = mean )
+
+
+plot(yy$Flow, yy$"Calcium", log = "x")
+
+
+
+subset(yy, Flow > 1)
+View(xx)
+
+```
 

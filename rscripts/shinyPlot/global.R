@@ -34,4 +34,5 @@ analytes <- filter(small_dat, date >= as.Date("1/1/2000", format = "%m/%d/%Y") )
     group_by(Characteristic.Name) %>% 
     summarise(n = n(), min = min(Result.Value), max = max(Result.Value), n_zero = sum(Result.Value == 0 ), n_detects =  sum(Result.Value > 0 ) ) %>% 
     arrange(desc(n))
+
 analytes <- filter(analytes, n > 150)

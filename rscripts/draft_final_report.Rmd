@@ -1,0 +1,164 @@
+---
+title: "Draft_Report"
+author: "mjp"
+date: "Sunday, May 17, 2015"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    fig_width: 7
+    fig_height: 6
+    fig_caption: true
+---
+
+This document summarizes Every Byte Help's efforts to learn and analyze Colorado River Watch's water quality data.  [Colorado River Watch (RiverWatch)]( http://www.coloradoriverwatch.org/) is an organization that trains volunteer groups such as schools, envvironmental groups and fishing organization to correctly collect water quality samples.  These samples are analyzed using Colorado Department of Natural Resources facitlities. The data is stored in the [Colorado Data Sharing Network (CDSN)](http://www.coloradowaterdata.org/) database.
+
+While RiverWatch has collected data at sites across the state, this initial task focuses on data collected in Roaring Fork Basin.  The Roaring Fork River is a tributary to the Upper Colorado River beginning above Aspen and joining the Colorado River at Glenwood Springs.  The Roaring Fork Basin was recommended due to the relatively high number of sampling locations with long period of records.
+
+# Data
+
+```{r dataRead, echo=FALSE, message=FALSE}
+### load libraries
+library(knitr)
+opts_chunk$set(comment=FALSE, echo = FALSE,  message = FALSE)
+
+library(kfigr, quietly = TRUE) 
+library(ggplot2, quietly = TRUE)
+library(dplyr, quietly = TRUE )
+library(leaflet)
+
+
+if (!requireNamespace('htmlwidgets') || packageVersion('htmlwidgets') <= '0.3.2')
+  devtools::install_github('ramnathv/htmlwidgets')
+# install DT
+if (!require("DT")) devtools::install_github("rstudio/DT")
+library(DT)
+
+
+load("../data/binaryDat.Rdata")  ## created by data_processing.R ; binary for efficiency
+
+# A function for captioning and referencing images
+fig <- local({
+    i <- 0
+    ref <- list()
+    list(
+        cap=function(refName, text) {
+            i <<- i + 1
+            ref[[refName]] <<- i
+            paste("Figure ", i, ": ", text, sep="")
+        },
+        ref=function(refName) {
+            ref[[refName]]
+        })
+})
+```
+
+Data used in this project was queried from the CDSN on April 30th.  The original query produced `r nrow(full_dat)` records from `r length(unique(full_dat$analyte))` analytes collected at `r length(unique(full_dat$Monitoring.Location.ID)) ` sites.  This data was collected between `r min(full_dat$date)` to `r max(full_dat$date)`.
+
+
+## Samping Periods
+```{r dataTable1, echo=FALSE }
+
+datatable(events_by_sites[,-1],rownames = FALSE )
+
+```
+
+
+The following figures shows the dates of sampling events by site. From this plot, some observations are that routine sampling at many sites began around 2000 and sometime around 2004-5, sampling frequency changed at a number of locations.  Riverwatch indicated that this was done in part to conserve and reallocate resources.
+
+
+```{r allEventPlot, fig.width=11, fig.height = 12, fig.cap=fig$cap("allEventPlot", "All Roaring Fork Sampling Events by date.")}
+
+events_by_sites2 <- filter(events,date >= as.Date("1/1/1900", format = "%m/%d/%Y") )  %>% group_by(Monitoring.Location.ID )%>% 
+    summarize( n_events = n_distinct(date),
+               earliest = min(date), 
+               latest = max(date)) %>% 
+    arrange( desc(n_events))
+
+### examine date range with plot
+
+events %>% ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
+
+```
+
+
+Based on `r fig$ref("allEventPlot")`, it was decided to initially focus on data collected a after January 1,  2000 and site with records collected during at least 10 years.  Events from this subset of sites are shown below.
+
+
+```{r smallEventPlot, fig.width=11, fig.height = 6, fig.cap=fig$cap("smallEventPlot", "Dates of sampling events for reduced set of locations and events after January 1, 2000") }
+
+
+### examine date range with plot
+
+filter(events,date >= as.Date("1/1/1999", format = "%m/%d/%Y") & Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID) %>% ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
+
+```
+
+## Sampling Sites 
+
+The following figure certainly suggests that there are  a few clusters of sites that might be evalulated to assess whether they could be considered as the same, thereby increasing representation along the main stem of the Roaring Fork and the Crystal River ( the southwestern tributary).
+
+
+
+```{r siteFigure, fig.cap=fig$cap("siteFigure", "Sampling locations.  Blue pins indicate regularly monitored sites. Red points indicate infrequently or inconsistently monitored sites. ") }
+
+good_sites <- unique( small_dat[ , names(small_dat) %in% c("Monitoring.Location.ID", "Monitoring.Location.Name", "Monitoring.Location.Latitude", "Monitoring.Location.Longitude"   ) ] ) 
+
+all_sites <- unique( full_dat[ , names(small_dat) %in% c("Monitoring.Location.ID", "Monitoring.Location.Name", "Monitoring.Location.Latitude", "Monitoring.Location.Longitude"   ) ] ) 
+
+names(good_sites)[3:4] <- c("latitude", "longitude")
+names(all_sites)[3:4] <- c("latitude", "longitude")
+
+m = leaflet() %>% addTiles()
+m %>% addCircles(data=all_sites) %>% addMarkers(data=good_sites, popup=good_sites$Monitoring.Location.Name )
+
+
+```
+
+## Analytes
+
+# Summary Statistics
+## Tables
+## Figures
+## Maps
+
+# Trends
+## Significant Trends
+## Figures
+## Maps
+
+# Stream Segment Standards and Exceedances.
+## Discussion of standards
+### Table Value Standards
+
+# Flow Data
+## Location of USGS Gages
+## Correlation with Hardness
+
+# Next Steps
+## Recommendations
+## Other  basins
+
+Roaring Fork Data Summary
+
+```{r}
+summary(cars)
+```
+
+You can also embed plots, for example:
+
+```{r firstPlot, echo=FALSE, fig.cap= 'asdf'}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. `r figr("firstPlot",  TRUE, TRUE, type = "Figure")`.
+
+
+
+
+
+```{r cars, echo=FALSE, fig.cap=fig$cap("cars", "Here you see some interesting stuff about cars and such.")}
+plot(cars)
+```
+
+What you always wanted to know about cars is shown in figure 

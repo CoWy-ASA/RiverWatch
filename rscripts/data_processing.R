@@ -41,7 +41,7 @@ events_after2000 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y
 
 ## eliminate sites with fewer than 25 samples
        
-       events_by_sites <-  events_after2000 %>% group_by(Monitoring.Location.ID )%>% 
+       events_by_sites <-  events_after2000 %>% group_by(Monitoring.Location.ID, Monitoring.Location.Name )%>% 
            summarize( n_events = n_distinct(date),
                       earliest = min(date), 
                       latest = max(date),

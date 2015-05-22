@@ -12,7 +12,7 @@
 library(dplyr)
 
 dat   <- read.csv("data/dsn_pull/rf-1990-2015.csv", header = TRUE, as.is = TRUE)
-sites <- read.csv("data//dsn_pull/rf_sites.csv", header = TRUE, as.is = TRUE )
+sites <- read.csv("data/dsn_pull/rf_sites.csv", header = TRUE, as.is = TRUE )
 
 dat$date <- as.Date(dat$Activity.Start.Date, format = "%m/%d/%Y")
 dat$Result.Value <- as.numeric(dat$Result.Value)
@@ -68,5 +68,21 @@ analytes <- filter(analytes, n > 200)  ## note this combines total and dissolved
 ### smaller data set
 
 small_dat <- filter(dat_dt, analyte %in% analytes$analyte & Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & date >= as.Date("1/1/2000", format = "%m/%d/%Y")   )
-       
+ 
+
+### data cleaning
+
+### create vector with all column names except Result.Value and Result.UID
+grp_cols <- names(small_dat)[! names(small_dat) %in% c("Result.Value", "Result.UID")]
+dots <- lapply(grp_cols, as.symbol)
+
+# Perform frequency counts
+small_dat %>% group_by_(.dots=dots) %>% summarise(n = length(Result.Value), min = min(Result.Value), max = max(Result.Value), dl = max(Detection.Quantitation.Limit.Value1))  -> new_dat  ## note the underscore in group_by
+
+new_dat$flag <- NA
+new_dat$flag[new_dat$n > 1] <- 777
+new_dat$Result.Value <- new_dat$max
+small_dat <- new_dat
+
+
 save(list = c("small_dat", "main_sites", "events", "events_by_sites", "full_dat"),file = "data/binaryDat.Rdata")

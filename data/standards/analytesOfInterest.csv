@@ -25,7 +25,7 @@ Sodium                                          ,,,,No standard?
 Sulfate                                                               ,,,250 mg/l,
 "Temperature, sample                                                   ",,,,depends on segment and time of year
 Total suspended solids                                                ,,,,No standard?
-Zinc                                                                  ,TVS,TVS,,"Sculpin TVS standard to be used for segments 2, 5, 6, 10"
+Zinc                                                                  ,TVS,TVS,,"Sculpin TVS standard to be used for segments 2, 5, 6, 10 when hardness < 102"
 ,,,,
 ,,,,
 Questions,,,,
@@ -33,3 +33,4 @@ Questions,,,,
 "I'm not sure how to do standards for Nitrogen; there are standards for NO2 and NO3, but how they relate to what's being measured isn't clear to me (no nitrogen standards currently implemented)",,,,
 "Dissolved Oxygen has a separate standard for spawning, but I have not implemented it… not sure how/where it is to be used instead of usual standard",,,,
 "Arsenic, Phosphorus, and Zinc have segment dependent values, but currently lack segment info(?)",,,,
+Temperature…. Being used correctly or not??,,,,

@@ -3,9 +3,6 @@
 #
 
 
-load("data/binaryDat.RData")
-# analytelist <- read.csv("data/standards/analytesOfInterest.csv")
-
 # Table Value Standards for analytes that have an acute and chronic standard
 # Analyte should be from analytelist below
 # type is chronic or acute
@@ -47,7 +44,7 @@ tvs <- function(analyte, type = "chronic", hardness = NA, pH = NA, temperature =
            Selenium_chronic = 4.6,
            Zinc_acute = ifelse(is.na(hardness), NA, 0.978*exp(0.9094*log(hardness)+0.9095)),
            Zinc_chronic = ifelse(is.na(hardness), NA, 0.986*exp(0.9094*log(hardness)+0.6235)),
-           ZincSculpin_chronic = exp(2.140*log(hardness)-5.084) # if hardness < 102 mg/l CaCO3 (do we use this??? ch or ac???)
+           ZincSculpin_chronic = exp(2.140*log(hardness)-5.084) # if hardness < 102 mg/l CaCO3 
            )
 }
 
@@ -58,12 +55,12 @@ tvs <- function(analyte, type = "chronic", hardness = NA, pH = NA, temperature =
 # [It's not clear to me if this is water temp or air temp]
 tvstemp <- function(segment, date, dm = T){
     require(lubridate)
-    ifelse(dm == T, "dm", "mwat")
-    if ((segment %in% c("1", "2", "3a", "3d", "4", "5", "6", "7", "8", "9", "10a", "10b")) | (segment %in% c(1,2,4:10))){
+    type <- ifelse(dm == T, "dm", "mwat")
+    if ( segment %in% c("01", "02", "03A", "03D", "04", "05", "06", "07", "08", "09", "10A", "10B") ){
         tier <- "CS-I"
-    } else if (segment %in% c("3b", "3c")){
+    } else if (segment %in% c("03B", "03C")){
         tier <- "CS-II"
-    } else if ((segment %in% c("11", "12")) | (segment %in% c(11,12))){
+    } else if ( segment %in% c("11", "12") ){
         tier <- "CLL"
     } else {
         stop('Invalid segment')
@@ -99,14 +96,14 @@ roaringforkstandards <- function(measure, type = NA,  segment = NA, hard = NA, p
            "Cadmium_acute" = tvs("Cadmium", "acute", hard, ph, temp),
            "Cadmium_chronic" = tvs("Cadmium", "chronic", hard, ph, temp),
            "Iron" = 300, # ug/l dissolved
-           "Iron_Trec" = 1000,
+           "Iron_Total" = 1000,
            "Manganese_acute" = tvs("Manganese", "acute", hard, ph, temp),
            "Manganese_chronic" = tvs("Manganese", "chronic", hard, ph, temp),
            "Manganese_chronic_dis" = 50,
            "Selenium_acute" = tvs("Selenium", "acute", hard, ph, temp),
            "Selenium_chronic" = tvs("Selenium", "chronic", hard, ph, temp),
            "Arsenic_acute" = 340,
-           "Arsenic_chronic" = ifelse(segment == "3b", "0.02 to 10", 0.02), # Trec for chronic
+           "Arsenic_chronic" = ifelse(segment == "3B", "0.02 to 10", 0.02), # Trec for chronic
            "Cadmium_acute" = tvs("CadmiumTrout", "acute", hard, ph, temp),
            "Cadmium_chronic" = tvs("Cadmium", "chronic", hard, ph, temp),
            "Copper_acute" = tvs("Copper", "acute", hard, ph, temp),
@@ -114,16 +111,21 @@ roaringforkstandards <- function(measure, type = NA,  segment = NA, hard = NA, p
            "Lead_acute" = tvs("Lead", "acute", hard, ph, temp),
            "Lead_chronic" = tvs("Lead", "chronic", hard, ph, temp),
            "Zinc_acute" = tvs("Zinc", "acute", hard, ph, temp),
-           "Zinc_chronic" = ifelse((segment %in% c(2, 5, 6, 10)) | (segment %in% c("2", "5", "6", "10")),
+           "Zinc_chronic" = ifelse((segment %in% c("02", "05", "06", "10")) & (hard < 102),
                                    tvs("ZincSculpin", "chronic", hard, ph, temp),
                                    tvs("Zinc", "chronic", hard, ph, temp)),
-           "Phosphorus" = ifelse((segment %in% c(11, 12)) | (segment %in% c("11", "12")), 25, 110), # ug/l total
+           "Phosphorus" = ifelse(segment %in% c("11", "12"), 25, 110), # ug/l total
            "Chloride" = 250,
            "Sulfate" = 250 #mg/l
            )
 }
 
 
+
+load("data/binaryDat.RData")
+stations <- read.csv("data/processed/stations.csv")
+# analytelist <- read.csv("data/standards/analytesOfInterest.csv")
+stations$segment <- substr(stations$WaterBodyID,7,10)
 
 # take a look at measured values
 qplot(date, Result.Value, data = mydat) + facet_wrap(~analyte, scales = "free_y")
@@ -137,29 +139,91 @@ mydat <- small_dat[,list(date, Monitoring.Location.ID,
 # there are some cases of multiple measurements on the same day -- take averages 
 datwide <- dcast(mydat, date + Monitoring.Location.ID ~ analyte, value.var = "Result.Value", fun.aggregate = mean)
 
+# add segment info from stations dataframe
+datwide <- merge(datwide, stations[,c("Station", "segment")], by.x = "Monitoring.Location.ID", by.y = "Station", all.x = T)
+
 ### add standards to datwide
 
 # analytes for which standards are specifed for dissolved measurements (as opposed to total)
-# don't do Arsenic yet because need stream segment info
-dissolved.meas <- c("Aluminum", "Cadmium", "Copper", "Iron", "Lead", "Manganese", "Selenium", "Zinc")
+# and which have chronic and acute standards
+dissolved.meas <- c("Aluminum", "Arsenic", "Cadmium", "Copper", 
+                    "Lead", "Manganese", "Selenium", "Zinc")
 
-# add standards for dissolved measures
+# add standards for dissolved measures (separate chronic and acute standards)
 for (i in dissolved.meas){
-    datwide[, paste(i,"Standard_chronic", sep = "_")] <- mapply(roaringforkstandards, measure = i, type = "chronic", segment = NA, hard = datwide[,"Hardness, Ca, Mg"], ph = datwide[,"pH"], temp = datwide[,"Temperature, sample"])
-    datwide[, paste(i,"Standard_acute", sep = "_")] <- mapply(roaringforkstandards, measure = i, type = "acute", segment = NA, hard = datwide[,"Hardness, Ca, Mg"], ph = datwide[,"pH"], temp = datwide[,"Temperature, sample"])
+    datwide[, paste(i,"Standard_chronic", sep = "_")] <- mapply(roaringforkstandards, measure = i, 
+                                                                type = "chronic", 
+                                                                segment = datwide[,"segment"], 
+                                                                hard = datwide[,"Hardness, Ca, Mg"], 
+                                                                ph = datwide[,"pH"], 
+                                                                temp = datwide[,"Temperature, sample"])
+    datwide[, paste(i,"Standard_acute", sep = "_")] <- mapply(roaringforkstandards, measure = i, 
+                                                              type = "acute", 
+                                                              segment = datwide[,"segment"], 
+                                                              hard = datwide[,"Hardness, Ca, Mg"], 
+                                                              ph = datwide[,"pH"], 
+                                                              temp = datwide[,"Temperature, sample"])
 }
 
-### add other standards
+### add other standards (no chronic/acute designation for these)
 # others
-other.meas <- c("DO", "pHmin", "pHmax", "Iron", "Iron_Trec", "Phosphorus", "Chloride", "Sulfate")
+other.meas <- c("DO", "pHmin", "pHmax", "Iron", "Iron_Total", "Phosphorus", "Chloride", "Sulfate")
 for (i in other.meas){
-    datwide[, paste(i,"Standard", sep = "_")] <- mapply(roaringforkstandards, measure = i, type = NA, segment = NA, hard = datwide[,"Hardness, Ca, Mg"], ph = datwide[,"pH"], temp = datwide[,"Temperature, sample"])
+    datwide[, paste(i,"Standard", sep = "_")] <- mapply(roaringforkstandards, measure = i, 
+                                                        type = NA, 
+                                                        segment = datwide[,"segment"], 
+                                                        hard = datwide[,"Hardness, Ca, Mg"], 
+                                                        ph = datwide[,"pH"], 
+                                                        temp = datwide[,"Temperature, sample"])
 }
 
 # temperature (need segment classifications before this will work)
-# datwide[,"Temperature_Standard"] <- mapply(tvstemp, segment = NA, date = datwide[,"date"])
+datwide[,"Temperature_Standard"] <- mapply(tvstemp, segment = datwide[,"segment"], date = datwide[,"date"])
 
 # how best to plot?
 datwide$loghard <- log(datwide[,c("Hardness, Ca, Mg")])
 qplot(date, Zinc_Dissolved, data = datwide, color = factor(Zinc_Dissolved > Zinc_Standard_chronic)) 
 qplot(loghard, Zinc_Dissolved, data = datwide, color = factor(Zinc_Dissolved > Zinc_Standard_chronic)) 
+
+
+
+#### look at how often samples failed to meet standards
+
+## standards on dissolved
+for (i in dissolved.meas){
+    print(i)
+    x <- sum(datwide[,paste(i,"Dissolved",sep="_")] > datwide[,paste(i, "Standard_chronic", sep="_")], na.rm = T)
+    print(c(x, x/sum(!is.na(datwide[,paste(i,"Dissolved",sep="_")]))))
+}
+
+## standards on totals
+# Phosphorus
+# Chloride
+# Sulfate
+for (i in c("Phosphorus", "Chloride", "Sulfate")){
+    print(i)
+    x <- sum(datwide[,paste(i, "Total", sep = "_")] > datwide[,paste(i, "Standard", sep="_")], na.rm = T)
+    print(c(x, x/sum(!is.na(datwide[,paste(i,"Total", sep="_")]))))
+}
+
+## oddballs
+
+# Iron Total
+x <- sum(datwide[,"Iron_Total"] > datwide[,"Iron_Total_Standard"], na.rm = T)
+print(c(x, x/sum(!is.na(datwide[,"Iron_Total"]))))
+
+# Iron Dissolved
+x <- sum(datwide[,"Iron_Dissolved"] > datwide[,"Iron_Standard"], na.rm = T)
+print(c(x, x/sum(!is.na(datwide[,"Iron_Dissolved"]))))
+
+# pH
+x <- sum((datwide[,"pH"] < datwide[,"pHmin_Standard"]) | (datwide[,"pH"] > datwide[,"pHmax_Standard"]), na.rm = T)
+print(c(x, x/sum(!is.na(datwide[,"pH"]))))
+
+# DO
+x <- sum(datwide[,"Dissolved oxygen (DO)"] < datwide[,"DO_Standard"], na.rm = T)
+print(c(x, x/sum(!is.na(datwide[,"Dissolved oxygen (DO)"]))))
+
+# Temperature
+x <- sum(datwide[,"Temperature, sample"] > datwide[, "Temperature_Standard"], na.rm = T)
+print(c(x, x/sum(!is.na(datwide[,"Temperature, sample"]))))

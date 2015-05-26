@@ -103,7 +103,9 @@ roaringforkstandards <- function(measure, type = NA,  segment = NA, hard = NA, p
            "Selenium_acute" = tvs("Selenium", "acute", hard, ph, temp),
            "Selenium_chronic" = tvs("Selenium", "chronic", hard, ph, temp),
            "Arsenic_acute" = 340,
-           "Arsenic_chronic" = ifelse(segment == "3B", "0.02 to 10", 0.02), # Trec for chronic
+           "Arsenic_chronic" = NA,
+           "Arsenic_Total_acute" = NA,
+           "Arsenic_Total_chronic" = ifelse(segment == "3B", "0.02 to 10", 0.02), # Trec for chronic
            "Cadmium_acute" = tvs("CadmiumTrout", "acute", hard, ph, temp),
            "Cadmium_chronic" = tvs("Cadmium", "chronic", hard, ph, temp),
            "Copper_acute" = tvs("Copper", "acute", hard, ph, temp),
@@ -166,6 +168,14 @@ for (i in dissolved.meas){
 }
 
 ### add other standards (no chronic/acute designation for these)
+# Arsenic_chronic is on total, not dissolved
+datwide[,"Arsenic_Total_Standard_chronic"] <- mapply(roaringforkstandards, measure = "Arsenic_Total_chronic", 
+                                                     type = NA, 
+                                                     segment = datwide[,"segment"], 
+                                                     hard = datwide[,"Hardness, Ca, Mg"], 
+                                                     ph = datwide[,"pH"], 
+                                                     temp = datwide[,"Temperature, sample"])
+
 # others
 other.meas <- c("DO", "pHmin", "pHmax", "Iron", "Iron_Total", "Phosphorus", "Chloride", "Sulfate")
 for (i in other.meas){

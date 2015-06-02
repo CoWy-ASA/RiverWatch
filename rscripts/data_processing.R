@@ -33,7 +33,7 @@ dat_dt <- dat_dt[, ii]
 
 full_dat <- dat_dt
 
-events <- unique( dat[ , names(dat) %in% c("Activity.ID", "date", "Monitoring.Location.ID", "Monitoring.Location.Name" ) ] )       
+events <- unique( dat[ , names(dat) %in% c("Activity.ID", "date", "Monitoring.Location.ID", "Monitoring.Location.Name", "Monitoring.Location.Latitude", "Monitoring.Location.Longitude" ) ] )       
 events$year <- as.numeric(format(events$date, "%Y") ) 
 events <- as.tbl(events)
 
@@ -41,7 +41,7 @@ events_after2000 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y
 
 ## eliminate sites with fewer than 25 samples
        
-       events_by_sites <-  events_after2000 %>% group_by(Monitoring.Location.ID, Monitoring.Location.Name )%>% 
+       events_by_sites <-  events_after2000 %>% group_by(Monitoring.Location.ID, Monitoring.Location.Name, Monitoring.Location.Latitude, Monitoring.Location.Longitude )%>% 
            summarize( n_events = n_distinct(date),
                       earliest = min(date), 
                       latest = max(date),
@@ -50,7 +50,7 @@ events_after2000 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y
        
        ## select sites with 10 or more years of data.
 
-       main_sites <- filter(events_by_sites, n_years > 10 ) %>% select(Monitoring.Location.ID)
+       main_sites <- filter(events_by_sites, n_years > 10 ) #%>% select(Monitoring.Location.ID)
        
        
        ### examine date range with plot
@@ -82,7 +82,21 @@ small_dat %>% group_by_(.dots=dots) %>% summarise(n = length(Result.Value), min 
 new_dat$flag <- NA
 new_dat$flag[new_dat$n > 1] <- 777
 new_dat$Result.Value <- new_dat$max
+
+## hard coded error changes
+
+i <- new_dat$analyte == "pH" & (new_dat$Result.Value > 14 | new_dat$Result.Value < 5 )
+#new_dat$Result.Value[i] <- NA
+#new_dat$flag[i] <- 888
+new_dat <- new_dat[!i, ]
+
+
+
+
 small_dat <- new_dat
 
 
 save(list = c("small_dat", "main_sites", "events", "events_by_sites", "full_dat"),file = "data/binaryDat.Rdata")
+
+## save also to shiny file
+save(list = c("small_dat", "main_sites", "events", "events_by_sites", "full_dat"),file = "rscripts/shinyPlot/binaryDat.Rdata")

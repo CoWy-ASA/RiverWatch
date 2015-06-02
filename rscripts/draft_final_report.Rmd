@@ -2,6 +2,7 @@
 title: "Draft_Report"
 author: "Every Byte Helps"
 date: "Wednesday, May 20, 2015"
+runtime: shiny
 output:
   html_document:
     toc: true
@@ -16,6 +17,7 @@ output:
 This document summarizes Every Byte Help's efforts to learn and analyze Colorado River Watch's water quality data.  [Colorado River Watch (RiverWatch)]( http://www.coloradoriverwatch.org/) is an organization that trains volunteer groups such as schools, envvironmental groups and fishing organization to correctly collect water quality samples.  These samples are analyzed using Colorado Department of Natural Resources facitlities. The data is stored in the [Colorado Data Sharing Network (CDSN)](http://www.coloradowaterdata.org/) database.
 
 While River Watch has collected data at sites across the state, this initial task focuses on data collected in Roaring Fork Basin.  The Roaring Fork River is a tributary to the Upper Colorado River beginning above Aspen and joining the Colorado River at Glenwood Springs.  The Roaring Fork Basin was recommended due to the relatively high number of sampling locations with long period of records.
+
 
 # Data
 
@@ -86,7 +88,7 @@ events %>% ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
 ```
 
 
-Based on `r fig$ref("allEventPlot")`, it was decided to initially focus on data collected a after January 1,  2000 and site with records collected during at least 10 years.  Events from this subset of sites are shown below.
+Based on `r fig$ref("allEventPlot")`, it was decided to initially focus on data collected a after January 1, 2000 and site with records collected during at least 10 years.  Events from this subset of sites are shown below.
 
 
 ```{r smallEventPlot, fig.width=11, fig.height = 6, fig.cap=fig$cap("smallEventPlot", "Dates of sampling events for reduced set of locations and events after January 1, 2000") }
@@ -127,6 +129,17 @@ m %>% addCircles(data=all_sites) %>% addMarkers(data=good_sites, popup=good_site
 ## Maps
 
 # Trends
+
+To qualitatively explore trends, a linear regression was fit to the result for each site.  A shiny app was created allowing the user to select an analyte and to select whether the results should be log-transformed.  To allow a log transformation to be applied, all values reported as zero were set to the detection limit.  
+
+*Currently this shiny app is hosted on shiny.io here.  Theoretically, we should be able to incorporate a shiny application into a markdown document.*
+
+Scrolling through these plots, several items should be noted.
+
+* For most metals, a high proportion of non-detects make linear models inappropriate.
+* For some analytes, multiple detection limits were used.
+* For some analytes such as sodium and potassium, it appear that earlier results were recorded as zero or below detection.  Given the subsequent higher levels, this is suspect and should be checked.
+
 ## Significant Trends
 ## Figures
 ## Maps

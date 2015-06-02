@@ -1,6 +1,7 @@
 
 library(ggplot2)
 library(dplyr)
+library(ggmap)
 
 ### clunky data processing which is only run when the site is first accessed.
 
@@ -41,3 +42,10 @@ analytes <- filter(small_dat, date >= as.Date("1/1/2000", format = "%m/%d/%Y") )
     group_by(Characteristic.Name, analyte) %>%
     summarise(n = n(), min = min(Result.Value), max = max(Result.Value), n_zero = sum(Result.Value == 0 ), n_detects =  sum(Result.Value > 0 ) ) %>% 
     arrange(desc(n))
+
+### load map data
+
+x <- range(main_sites$Monitoring.Location.Longitude)
+y <- range(main_sites$Monitoring.Location.Latitude)
+buff <- 0.2 ## degree buffer
+mp <- get_map(location = c(x[1]- buff, y[1]- buff, x[2] + buff, y[2] + buff), maptype = "roadmap")

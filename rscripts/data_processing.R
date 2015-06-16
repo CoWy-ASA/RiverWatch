@@ -58,7 +58,7 @@ events_after2000 <- filter(events,date >= as.Date("1/1/2000", format = "%m/%d/%Y
        
        analytes <- filter(dat_dt, Monitoring.Location.ID %in% main_sites$Monitoring.Location.ID & date >= as.Date("1/1/2000", format = "%m/%d/%Y") ) %>% 
            group_by(analyte) %>% 
-           summarise(n = n(), min = min(Result.Value), max = max(Result.Value), n_zero = sum(Result.Value == 0 ), n_detects =  sum(Result.Value > 0 ) ) %>% 
+           summarise(n = length(Monitoring.Location.ID), min = min(Result.Value), max = max(Result.Value), n_zero = sum(Result.Value == 0 ), n_detects =  sum(Result.Value > 0 ) ) %>% 
            arrange(desc(n))
        
 ### remove analytes seldom sampled
@@ -99,4 +99,4 @@ small_dat <- new_dat
 save(list = c("small_dat", "main_sites", "events", "events_by_sites", "full_dat"),file = "data/binaryDat.Rdata")
 
 ## save also to shiny file
-save(list = c("small_dat", "main_sites", "events", "events_by_sites", "full_dat"),file = "rscripts/shinyPlot/binaryDat.Rdata")
+save(list = c("analytes"," small_dat", "main_sites", "events", "events_by_sites", "full_dat"),file = "rscripts/shinyPlot/binaryDat.Rdata")

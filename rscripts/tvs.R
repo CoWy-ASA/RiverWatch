@@ -130,10 +130,13 @@ stations <- read.csv("data/processed/stations.csv")
 stations$segment <- substr(stations$WaterBodyID,7,10)
 
 # take a look at measured values
-qplot(date, Result.Value, data = mydat) + facet_wrap(~analyte, scales = "free_y")
+qplot(date, Result.Value, data = small_dat) + facet_wrap(~analyte, scales = "free_y")
 
 # rearrange small_dat to wide format
 library(data.table)
+library(ggplot2)
+library(reshape2)
+
 small_dat <- data.table(small_dat)
 mydat <- small_dat[,list(date, Monitoring.Location.ID,
                          Characteristic.Name, Sample.Fraction, Result.Unit,

@@ -1,8 +1,7 @@
 ---
 title: "Draft_Report"
 author: "Every Byte Helps"
-date: "Wednesday, May 20, 2015"
-runtime: shiny
+date: "Wednesday, June 2, 2015"
 output:
   html_document:
     toc: true
@@ -65,7 +64,7 @@ Data used in this project was queried from the CDSN on April 30th.  The original
 ## Samping Periods
 ```{r dataTable1, echo=FALSE }
 
-datatable(events_by_sites[,-1],rownames = FALSE )
+datatable(events_by_sites[,-c(1,3,4) ],rownames = FALSE )
 
 ```
 
@@ -124,6 +123,8 @@ m %>% addCircles(data=all_sites) %>% addMarkers(data=good_sites, popup=good_site
 ## Analytes
 
 # Summary Statistics
+
+
 ## Tables
 ## Figures
 ## Maps
@@ -134,11 +135,14 @@ To qualitatively explore trends, a linear regression was fit to the result for e
 
 *Currently this shiny app is hosted on shiny.io here.  Theoretically, we should be able to incorporate a shiny application into a markdown document.*
 
+** [shinyApp](https://mjpdenver.shinyapps.io/RF_Trends) **
+
 Scrolling through these plots, several items should be noted.
 
 * For most metals, a high proportion of non-detects make linear models inappropriate.
 * For some analytes, multiple detection limits were used.
 * For some analytes such as sodium and potassium, it appear that earlier results were recorded as zero or below detection.  Given the subsequent higher levels, this is suspect and should be checked.
+* For analytes like total copper, it appears that values are reported that are less than the dection limit.  It is not clear if this represents an inconsistency in the reporting procedures.
 
 ## Significant Trends
 ## Figures
@@ -179,11 +183,6 @@ left_join(sub_dat, flow_wide, by = "date",copy = TRUE )  %>%
     scale_x_log10() + scale_y_log10() + stat_smooth()
 
     ## adds flow columns #### 
-
-
-
-
-
 
 
 ```

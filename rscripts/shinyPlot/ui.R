@@ -1,5 +1,5 @@
 shinyUI(fluidPage(
-    titlePanel("Data Exploration"),
+    titlePanel("River Watch Exploratory Data Analysis"),
 
 sidebarLayout(sidebarPanel =  sidebarPanel(
     #       h4("Select Variable"),    
@@ -7,6 +7,9 @@ sidebarLayout(sidebarPanel =  sidebarPanel(
         br(),
           h4("Log(Transformation)"),
            checkboxInput('logT', 'Log'),
+        br(),
+        h4("Fix y-axis?"),
+        checkboxInput('fixY', 'fixY'),
         br(),
         h4("Quantile (Map View) "),
         sliderInput(inputId = 'quant', label = NULL, min = 0.5, max = 1, step = .05, value = 0.95)

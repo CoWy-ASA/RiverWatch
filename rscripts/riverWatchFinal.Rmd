@@ -1,0 +1,99 @@
+---
+title: "RiverWatch"
+output: html_document
+---
+
+The following information identifies:
+
+1)  Median freq. of most active stations over the period 1990-11-26 through 2012-12-03
+2)  The top 50% most active stations determine by number of samples over the noted period.  
+3)  Histogram of each of station from the top 50% most frequented sites.,  to identify sampling consistency from year to year.
+4)  The bottom 50% least active stations determine by number of samples over the noted period.
+5)  Count by Org. Name over the period 1990-11-26 through 2012-12-03
+6)  Each Organizations sampling counts by year.
+
+
+NOTE:  Any records without data (NAs) were still included.
+
+```{r}
+library(plyr)
+library(ggplot2)
+# setwd("/Users/cyndikoehl/Documents/Kaggle and EBH/RiverWatch")
+data <- read.csv("../data/processed/events.csv", colClasses = "character" )
+stationData <- read.csv("../data/processed/stations.csv", colClasses = "character" )
+
+data$calDate <- as.Date(data$date,format="%Y-%m-%d")
+data$weekNo <- as.numeric(format(data$calDate,"%U"))
+data$yearNo <- format(data$calDate,format="%Y")
+data$monthNo <- format(data$calDate,format="%m")
+data$yearMonthNo <- format(data$calDate,format="%Y-%m")
+
+
+```
+
+Median freq. of most active stations over the period 1990-11-26 through 2012-12-03
+
+
+```{r}
+countStn. <- count(data,c("Stn."))
+countStn. <- countStn.[order(countStn.$freq,decreasing=TRUE),]
+median(countStn.$freq)
+```
+
+
+The top 50% most active stations determine by number of samples over the noted period.  
+
+```{r}
+countStn.50sub <- subset(countStn.,countStn.$freq>= (median(countStn.$freq) ) )
+data2 <- merge(x=countStn.50sub, y=stationData, by.x = "Stn.", by.y = "Station", all.x=TRUE )
+countStn.50sub <- data2[,c(1:3)]
+countStn.50sub <- countStn.50sub[order(countStn.50sub$freq,decreasing=TRUE),]
+countStn.50sub
+```
+
+Histogram of each of station from the top 50% most frequented sites.,  to identify sampling consistency from year to year.
+
+```{r}
+for ( counter in 1:nrow(countStn.50sub)){
+
+aStnByYear <-  subset(data,data$Stn. == countStn.50sub[counter,1] )
+singleStationData <- subset(stationData,stationData$Station == countStn.50sub[counter,1] ) 
+print(ggplot(aStnByYear, aes(x=c(yearNo))) +  
+  geom_histogram(binwidth=0.5) + labs(x="Year",y="Number of Samples") + ggtitle(paste0("Station #",countStn.50sub[counter,1],": ",singleStationData$Name)) +
+  theme(axis.text.x = element_text(color="#993333", size=8, angle=45)))
+
+}
+
+```
+
+The bottom 50% least active stations determine by number of samples over the noted period.  
+
+```{r}
+countStn.50sub <- subset(countStn.,countStn.$freq< (median(countStn.$freq) ) )
+data2 <- merge(x=countStn.50sub, y=stationData, by.x = "Stn.", by.y = "Station", all.x=TRUE )
+countStn.50sub <- data2[,c(1:3)]
+countStn.50sub <- countStn.50sub[order(countStn.50sub$freq,decreasing=TRUE),]
+countStn.50sub
+```
+
+Count by Org. Name over the period 1990-11-26 through 2012-12-03
+
+```{r}
+countGroup <- count(data,c("Org.Name"))
+countGroup <- countGroup[order(countGroup$freq,decreasing=TRUE),]
+countGroup
+```
+
+Each Organizations sampling counts by year.
+
+```{r}
+for ( counter in 1:nrow(countGroup)){
+
+aGroupByYear <-  subset(data,data$Org.Name == countGroup[counter,1] )
+print(ggplot(aGroupByYear, aes(x=c(yearNo))) +  
+  geom_histogram(binwidth=0.5) + labs(x="Year",y="Number of Samples") + ggtitle(paste0("Group Name ",countGroup[counter,1])) +
+  theme(axis.text.x = element_text(color="#993333", size=8, angle=45)))
+
+}
+
+```

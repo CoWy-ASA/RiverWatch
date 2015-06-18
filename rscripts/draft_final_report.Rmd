@@ -1,7 +1,7 @@
 ---
-title: "Draft_Report"
+title: "Colorado River Watch Draft Report"
 author: "Every Byte Helps"
-date: "Wednesday, June 2, 2015"
+date: "Wednesday, June 18, 2015"
 output:
   html_document:
     toc: true
@@ -89,6 +89,16 @@ events %>% ggplot( aes(x = date, y = Monitoring.Location.Name )) + geom_point()
 
 Based on `r fig$ref("allEventPlot")`, it was decided to initially focus on data collected a after January 1, 2000 and site with records collected during at least 10 years.  Events from this subset of sites are shown below.
 
+## Additional Data Processing
+
+Working with the data queried from the Colorado Data Sharing Network, a few issues were discovered.  
+
+* There are multiple records stored for the same date/location/analyte without any qualifiers indicated if these were duplicates, splits or blanks.  At times when there were three results from the same data/location/analyte - one can infer that one is a blank - with a value less than the detection limit and 2 are splits or duplicates - with values a great deal higher than the detection limit. Until this is resolved - the maximum value for these values was used.
+
+Ideally the data stored at the CDSN and River Watch should be identical.  This is a known issue that is steadily being processed.  For the time being, code is being written for data queried from the CDSN so it could more readily be used in other basins.
+
+* For some values, results are reported greater than zero, but less than the detection limit.  It needs to be determined if this was part of a deliberate practice - or just something inconsistent.
+
 
 ```{r smallEventPlot, fig.width=11, fig.height = 6, fig.cap=fig$cap("smallEventPlot", "Dates of sampling events for reduced set of locations and events after January 1, 2000") }
 
@@ -122,10 +132,34 @@ m %>% addCircles(data=all_sites) %>% addMarkers(data=good_sites, popup=good_site
 
 ## Analytes
 
+
+
 # Summary Statistics
 
+The following statistics summarize the the number and range of samples by analyte.  prop_ND is the proportion of non-detects.  Some analytes such as alkalinity 
+
+```{r }
+## infer values less than the detection limit.
+
+small_dat$detect <- small_dat$Result.Value <= small_dat$Detection.Quantitation.Limit.Value1
+
+small_dat %>% group_by(analyte) %>% summarise(
+    n = n(),
+    max = max(Result.Value),
+    min = min(Result.Value),
+    median = median(Result.Value),
+    prop_ND = round(mean(detect, na.rm = TRUE), 2)
+    ) -> out
+
+datatable(out, rownames = FALSE, options( autoWidth = TRUE,
+  columnDefs = list(list(width = '50px', targets = c(1))))
+  )
+```
 
 ## Tables
+
+Incorporate Cyndi's material here.
+
 ## Figures
 ## Maps
 
@@ -142,15 +176,27 @@ Scrolling through these plots, several items should be noted.
 * For most metals, a high proportion of non-detects make linear models inappropriate.
 * For some analytes, multiple detection limits were used.
 * For some analytes such as sodium and potassium, it appear that earlier results were recorded as zero or below detection.  Given the subsequent higher levels, this is suspect and should be checked.
-* For analytes like total copper, it appears that values are reported that are less than the dection limit.  It is not clear if this represents an inconsistency in the reporting procedures.
+* For analytes like total copper, it appears that values are reported that are less than the detection limit.  It is not clear if this represents an inconsistency in the reporting procedures.
 
 ## Significant Trends
-## Figures
 ## Maps
 
+See [Shiny App] (https://mjpdenver.shinyapps.io/RF_Trends)
+
 # Stream Segment Standards and Exceedances.
+
 ## Discussion of standards
+
+[CDPHE Stream Standards](https://www.colorado.gov/pacific/cdphe/water-quality-control-commission-regulations )
+
+See page 23 for Roaring Fork Standards.  I also put this in the repository.
+
+[Explanation of Terms] (https://www.colorado.gov/pacific/sites/default/files/33_2014%2812%29.pdf).  This includes discussion of table value standards (TVS) and temperature criteria.
+
+
 ## Table Value Standards
+
+*Incorporate Steph's Code.*
 
 # Flow Data
 ## Location of USGS Gages
